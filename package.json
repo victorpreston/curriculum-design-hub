@@ -1,0 +1,38 @@
+{
+  "name": "curriculum-hub",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d --wait db",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run migrate -w @hub/api",
+    "db:seed": "npm run seed -w @hub/api",
+    "setup": "node scripts/ensure-env.mjs && npm run db:up && npm run db:migrate && npm run db:seed",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @hub/api\" \"npm run dev -w @hub/web\"",
+    "test": "npm run test -w @hub/shared && npm run test -w @hub/api",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "eval:retrieval": "npm run eval:retrieval -w @hub/api",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test",
+    "db:reset": "docker compose down -v && npm run setup",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4"
+  }
+}
