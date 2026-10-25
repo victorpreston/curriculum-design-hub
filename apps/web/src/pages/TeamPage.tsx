@@ -1,4 +1,3 @@
-import { DashboardStats, type DashboardStat } from '../components/DashboardStats';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { api } from '../lib/api';
 import { formatDateTime } from '../lib/format';
@@ -7,44 +6,6 @@ import { useResource } from '../lib/useResource';
 export function TeamPage() {
   const teachers = useResource(() => api.teachers(), 'teaching-team');
   const roster = teachers.data?.teachers ?? [];
-  const totalPlans = roster.reduce((sum, teacher) => sum + teacher.totalPlans, 0);
-  const submittedPlans = roster.reduce((sum, teacher) => sum + teacher.submittedPlans, 0);
-  const publishedPlans = roster.reduce((sum, teacher) => sum + teacher.publishedPlans, 0);
-  const activeTeachers = roster.filter((teacher) => teacher.totalPlans > 0).length;
-  const stats: DashboardStat[] = [
-    {
-      label: 'Teachers',
-      value: roster.length,
-      detail: `${activeTeachers} active in this workspace`,
-      ratio: roster.length ? activeTeachers / roster.length : 0,
-      tone: 'navy',
-      icon: '◎',
-    },
-    {
-      label: 'Plans created',
-      value: totalPlans,
-      detail: 'Across the teaching team',
-      ratio: Math.min(totalPlans / 12, 1),
-      tone: 'purple',
-      icon: '◫',
-    },
-    {
-      label: 'Waiting for review',
-      value: submittedPlans,
-      detail: 'Submitted plans requiring a decision',
-      ratio: Math.min(submittedPlans / 6, 1),
-      tone: 'gold',
-      icon: '✓',
-    },
-    {
-      label: 'Published lessons',
-      value: publishedPlans,
-      detail: 'Reusable curriculum-aligned plans',
-      ratio: Math.min(publishedPlans / 10, 1),
-      tone: 'green',
-      icon: '★',
-    },
-  ];
 
   return (
     <section className="team-page stack" aria-labelledby="team-heading">
@@ -63,7 +24,6 @@ export function TeamPage() {
         <p className="muted">Loading teaching team…</p>
       ) : (
         <>
-          <DashboardStats stats={stats} />
           <div className="card team-table-wrap">
             <div className="section-heading">
               <div>
