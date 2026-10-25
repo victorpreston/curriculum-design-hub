@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CheckCheck, CornerUpLeft, RotateCcw, Save, Send } from 'lucide-react';
 import {
   MIN_RETURN_COMMENT_LENGTH,
   validateLessonPlan,
@@ -45,7 +46,11 @@ export function TeacherActions({
   }
 
   return (
-    <div className="actions card stack" aria-busy={busy}>
+    <section
+      className="actions card stack plan-teacher-actions"
+      aria-label="Save and submit lesson"
+      aria-busy={busy}
+    >
       {problems.length > 0 && (
         <div className="banner banner-warning" role="status">
           <strong>Fix these before saving:</strong>
@@ -56,25 +61,27 @@ export function TeacherActions({
           </ul>
         </div>
       )}
-      <div className="row">
-        <label className="change-note">
-          <span className="visually-hidden">What did you change?</span>
-          <input
-            value={changeNote}
-            maxLength={200}
-            placeholder="What did you change? (optional)"
-            onChange={(e) => setChangeNote(e.target.value)}
-          />
-        </label>
+      <label className="change-note">
+        Version note <span className="muted small">Optional</span>
+        <input
+          value={changeNote}
+          maxLength={200}
+          placeholder="Briefly describe your changes"
+          onChange={(e) => setChangeNote(e.target.value)}
+        />
+      </label>
+      <div className="row plan-save-buttons">
         <button
           type="button"
           className="primary"
           disabled={busy || !dirty || problems.length > 0}
           onClick={save}
         >
+          <Save size={14} aria-hidden="true" />
           Save version
         </button>
         <button type="button" disabled={busy || !dirty} onClick={onDiscard}>
+          <RotateCcw size={14} aria-hidden="true" />
           Discard changes
         </button>
         <button
@@ -82,11 +89,15 @@ export function TeacherActions({
           disabled={busy || dirty || plan.groundingStatus === 'ungrounded'}
           onClick={submit}
         >
+          <Send size={14} aria-hidden="true" />
           Submit for review
         </button>
       </div>
       {dirty && (
-        <p className="muted small">Unsaved changes are kept on this device until you save.</p>
+        <p className="muted small">
+          Save to recheck curriculum evidence and enable submission. Unsaved work is kept on this
+          device.
+        </p>
       )}
       {!dirty && plan.groundingStatus === 'ungrounded' && (
         <p className="muted small">
@@ -94,7 +105,7 @@ export function TeacherActions({
         </p>
       )}
       <ErrorNotice error={error} />
-    </div>
+    </section>
   );
 }
 
@@ -120,8 +131,13 @@ export function LeadActions({
   }
 
   return (
-    <div className="actions card stack" aria-busy={busy}>
-      <h2>Review decision</h2>
+    <section
+      className="actions card stack plan-lead-actions"
+      aria-labelledby="review-decision-heading"
+      aria-busy={busy}
+    >
+      <h2 id="review-decision-heading">Review decision</h2>
+      <p className="plan-panel-description">Check the lesson and evidence before publishing.</p>
       <label>
         Comment for the teacher <span className="muted small">(required to return)</span>
         <textarea
@@ -133,6 +149,7 @@ export function LeadActions({
       </label>
       <div className="row">
         <button type="button" className="primary" disabled={busy} onClick={approve}>
+          <CheckCheck size={15} aria-hidden="true" />
           Approve and publish
         </button>
         <button
@@ -140,10 +157,11 @@ export function LeadActions({
           disabled={busy || trimmedComment.length < MIN_RETURN_COMMENT_LENGTH}
           onClick={returnToTeacher}
         >
+          <CornerUpLeft size={15} aria-hidden="true" />
           Return with comment
         </button>
       </div>
       <ErrorNotice error={error} />
-    </div>
+    </section>
   );
 }

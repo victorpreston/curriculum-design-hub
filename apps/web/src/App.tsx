@@ -26,7 +26,6 @@ function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
 }
 
 function HomeRedirect() {
-  const { user } = useAuth();
   return <Navigate to="/dashboard" replace />;
 }
 

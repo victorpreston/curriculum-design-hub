@@ -13,10 +13,51 @@ const GROUNDING_LABEL: Record<GroundingStatus, string> = {
   ungrounded: 'Not grounded',
 };
 
-export function StatusBadge({ status }: { status: PlanStatus }) {
-  return <span className={`badge status-${status}`}>{STATUS_LABEL[status]}</span>;
+const COMPACT_STATUS_LABEL: Record<PlanStatus, string> = {
+  draft: 'Draft',
+  submitted: 'In review',
+  returned: 'Returned',
+  published: 'Published',
+};
+
+const COMPACT_GROUNDING_LABEL: Record<GroundingStatus, string> = {
+  grounded: 'Grounded',
+  weak: 'Weak evidence',
+  ungrounded: 'No evidence',
+};
+
+export function StatusBadge({
+  status,
+  compact = false,
+}: {
+  status: PlanStatus;
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={`badge status-${status}`}
+      title={compact ? STATUS_LABEL[status] : undefined}
+      aria-label={compact ? STATUS_LABEL[status] : undefined}
+    >
+      {compact ? COMPACT_STATUS_LABEL[status] : STATUS_LABEL[status]}
+    </span>
+  );
 }
 
-export function GroundingBadge({ status }: { status: GroundingStatus }) {
-  return <span className={`badge grounding-${status}`}>{GROUNDING_LABEL[status]}</span>;
+export function GroundingBadge({
+  status,
+  compact = false,
+}: {
+  status: GroundingStatus;
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={`badge grounding-${status}`}
+      title={compact ? GROUNDING_LABEL[status] : undefined}
+      aria-label={compact ? GROUNDING_LABEL[status] : undefined}
+    >
+      {compact ? COMPACT_GROUNDING_LABEL[status] : GROUNDING_LABEL[status]}
+    </span>
+  );
 }

@@ -1,5 +1,14 @@
 import { useId, useState } from 'react';
 import {
+  BookOpen,
+  ChevronDown,
+  Clock3,
+  ClipboardCheck,
+  ListChecks,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import {
   MAX_MAIN_ACTIVITIES,
   scheduledMinutes,
   type LessonActivity,
@@ -58,20 +67,30 @@ function SourcePicker({
     );
   }
   return (
-    <fieldset className="source-picker">
-      <legend>Curriculum sources</legend>
-      {sources.map((source) => (
-        <label key={source.chunkId} className="inline">
-          <input
-            type="checkbox"
-            checked={selected.includes(source.chunkId)}
-            onChange={() => toggle(source.chunkId)}
-          />
-          {source.heading}{' '}
-          <span className="muted small">({documentTypeLabel(source.documentType)})</span>
-        </label>
-      ))}
-    </fieldset>
+    <details className="plan-source-picker">
+      <summary>
+        <BookOpen size={14} aria-hidden="true" />
+        <span>Curriculum sources</span>
+        <span className="plan-source-count">{selected.length} linked</span>
+        <ChevronDown size={14} aria-hidden="true" />
+      </summary>
+      <fieldset className="source-picker">
+        <legend className="visually-hidden">Curriculum sources</legend>
+        {sources.map((source) => (
+          <label key={source.chunkId} className="inline">
+            <input
+              type="checkbox"
+              checked={selected.includes(source.chunkId)}
+              onChange={() => toggle(source.chunkId)}
+            />
+            <span>
+              <strong>{source.heading}</strong>
+              <span className="plan-source-meta">{documentTypeLabel(source.documentType)}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+    </details>
   );
 }
 
@@ -90,50 +109,66 @@ function ActivityFields({
 }) {
   const update = (changes: Partial<LessonActivity>) => onChange({ ...activity, ...changes });
   return (
-    <fieldset className="activity-fields">
-      <legend>{legend}</legend>
-      <div className="row">
-        <label className="grow">
-          Title
-          <input value={activity.title} onChange={(e) => update({ title: e.target.value })} />
-        </label>
-        <label className="minutes-input">
-          Minutes
-          <input
-            type="number"
-            min={1}
-            value={activity.durationMinutes}
-            onChange={(e) => update({ durationMinutes: Number(e.target.value) })}
-          />
-        </label>
-      </div>
-      <label>
-        Teacher actions
-        <textarea
-          rows={4}
-          value={activity.teacherActions}
-          onChange={(e) => update({ teacherActions: e.target.value })}
+    <details className="plan-editor-activity">
+      <summary>
+        <span className="plan-phase-icon">
+          <ListChecks size={16} aria-hidden="true" />
+        </span>
+        <span className="plan-phase-copy">
+          <strong>{legend}</strong>
+          <span>{activity.title}</span>
+        </span>
+        <span className="minutes">{activity.durationMinutes} min</span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </summary>
+      <fieldset className="activity-fields">
+        <legend className="visually-hidden">{legend}</legend>
+        <div className="row">
+          <label className="grow">
+            Title
+            <input value={activity.title} onChange={(e) => update({ title: e.target.value })} />
+          </label>
+          <label className="minutes-input">
+            Minutes
+            <input
+              type="number"
+              min={1}
+              value={activity.durationMinutes}
+              onChange={(e) => update({ durationMinutes: Number(e.target.value) })}
+            />
+          </label>
+        </div>
+        <div className="plan-action-columns">
+          <label>
+            Teacher actions
+            <textarea
+              rows={4}
+              value={activity.teacherActions}
+              onChange={(e) => update({ teacherActions: e.target.value })}
+            />
+          </label>
+          <label>
+            Learner actions
+            <textarea
+              rows={4}
+              value={activity.learnerActions}
+              onChange={(e) => update({ learnerActions: e.target.value })}
+            />
+          </label>
+        </div>
+        <SourcePicker
+          selected={activity.sourceIds}
+          sources={sources}
+          onChange={(sourceIds) => update({ sourceIds })}
         />
-      </label>
-      <label>
-        Learner actions
-        <textarea
-          rows={3}
-          value={activity.learnerActions}
-          onChange={(e) => update({ learnerActions: e.target.value })}
-        />
-      </label>
-      <SourcePicker
-        selected={activity.sourceIds}
-        sources={sources}
-        onChange={(sourceIds) => update({ sourceIds })}
-      />
-      {onRemove && (
-        <button type="button" className="danger-link" onClick={onRemove}>
-          Remove this activity
-        </button>
-      )}
-    </fieldset>
+        {onRemove && (
+          <button type="button" className="danger-link" onClick={onRemove}>
+            <Trash2 size={13} aria-hidden="true" />
+            Remove activity
+          </button>
+        )}
+      </fieldset>
+    </details>
   );
 }
 
@@ -169,40 +204,55 @@ export function PlanEditor({
 
   return (
     <div className="editor stack">
-      <label>
-        Title
-        <input value={content.title} onChange={(e) => update({ title: e.target.value })} />
-      </label>
-      <label>
-        Key inquiry question
-        <input
-          value={content.keyInquiryQuestion}
-          onChange={(e) => update({ keyInquiryQuestion: e.target.value })}
-        />
-      </label>
-      <div className="lists">
-        <ListField
-          label="Objectives"
-          value={content.objectives}
-          onChange={(objectives) => update({ objectives })}
-        />
-        <ListField
-          label="Materials"
-          value={content.materials}
-          onChange={(materials) => update({ materials })}
-        />
-        <ListField
-          label="Core competencies"
-          value={content.coreCompetencies}
-          onChange={(coreCompetencies) => update({ coreCompetencies })}
-        />
-      </div>
+      <section className="card plan-overview" aria-labelledby="lesson-overview-heading">
+        <div className="plan-section-heading">
+          <span className="plan-phase-icon">
+            <BookOpen size={16} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 id="lesson-overview-heading">Lesson overview</h2>
+            <p>The focus, goals, and resources for this lesson.</p>
+          </div>
+        </div>
+        <label>
+          Title
+          <input value={content.title} onChange={(e) => update({ title: e.target.value })} />
+        </label>
+        <label>
+          Key inquiry question
+          <input
+            value={content.keyInquiryQuestion}
+            onChange={(e) => update({ keyInquiryQuestion: e.target.value })}
+          />
+        </label>
+        <div className="lists">
+          <ListField
+            label="Objectives"
+            value={content.objectives}
+            onChange={(objectives) => update({ objectives })}
+          />
+          <ListField
+            label="Materials"
+            value={content.materials}
+            onChange={(materials) => update({ materials })}
+          />
+          <ListField
+            label="Core competencies"
+            value={content.coreCompetencies}
+            onChange={(coreCompetencies) => update({ coreCompetencies })}
+          />
+        </div>
+      </section>
 
-      <p className={`timing ${scheduled === lessonMinutes ? 'ok' : 'off'}`} aria-live="polite">
-        Scheduled {scheduled} of {lessonMinutes} minutes
-        {scheduled !== lessonMinutes &&
-          ` (adjust activity minutes by ${lessonMinutes - scheduled})`}
-      </p>
+      <div className="plan-sequence-heading">
+        <h2>Lesson sequence</h2>
+        <p className={`timing ${scheduled === lessonMinutes ? 'ok' : 'off'}`} aria-live="polite">
+          <Clock3 size={13} aria-hidden="true" />
+          {scheduled} / {lessonMinutes} min
+          {scheduled !== lessonMinutes &&
+            ` (adjust activity minutes by ${lessonMinutes - scheduled})`}
+        </p>
+      </div>
 
       <ActivityFields
         legend="Starter"
@@ -230,43 +280,60 @@ export function PlanEditor({
           type="button"
           onClick={() => update({ mainActivities: [...content.mainActivities, NEW_ACTIVITY] })}
         >
+          <Plus size={14} aria-hidden="true" />
           Add activity
         </button>
       )}
 
-      <fieldset className="activity-fields">
-        <legend>Check for understanding</legend>
-        <label className="minutes-input">
-          Minutes
-          <input
-            type="number"
-            min={1}
-            value={content.checkForUnderstanding.durationMinutes}
-            onChange={(e) =>
-              update({
-                checkForUnderstanding: {
-                  ...content.checkForUnderstanding,
-                  durationMinutes: Number(e.target.value),
-                },
-              })
+      <details className="plan-editor-activity">
+        <summary>
+          <span className="plan-phase-icon">
+            <ClipboardCheck size={16} aria-hidden="true" />
+          </span>
+          <span className="plan-phase-copy">
+            <strong>Check for understanding</strong>
+            <span>
+              {content.checkForUnderstanding.questions.length} assessment question
+              {content.checkForUnderstanding.questions.length === 1 ? '' : 's'}
+            </span>
+          </span>
+          <span className="minutes">{content.checkForUnderstanding.durationMinutes} min</span>
+          <ChevronDown size={16} aria-hidden="true" />
+        </summary>
+        <fieldset className="activity-fields">
+          <legend className="visually-hidden">Check for understanding</legend>
+          <label className="minutes-input">
+            Minutes
+            <input
+              type="number"
+              min={1}
+              value={content.checkForUnderstanding.durationMinutes}
+              onChange={(e) =>
+                update({
+                  checkForUnderstanding: {
+                    ...content.checkForUnderstanding,
+                    durationMinutes: Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </label>
+          <ListField
+            label="Questions"
+            value={content.checkForUnderstanding.questions}
+            onChange={(questions) =>
+              update({ checkForUnderstanding: { ...content.checkForUnderstanding, questions } })
             }
           />
-        </label>
-        <ListField
-          label="Questions"
-          value={content.checkForUnderstanding.questions}
-          onChange={(questions) =>
-            update({ checkForUnderstanding: { ...content.checkForUnderstanding, questions } })
-          }
-        />
-        <SourcePicker
-          selected={content.checkForUnderstanding.sourceIds}
-          sources={sources}
-          onChange={(sourceIds) =>
-            update({ checkForUnderstanding: { ...content.checkForUnderstanding, sourceIds } })
-          }
-        />
-      </fieldset>
+          <SourcePicker
+            selected={content.checkForUnderstanding.sourceIds}
+            sources={sources}
+            onChange={(sourceIds) =>
+              update({ checkForUnderstanding: { ...content.checkForUnderstanding, sourceIds } })
+            }
+          />
+        </fieldset>
+      </details>
     </div>
   );
 }

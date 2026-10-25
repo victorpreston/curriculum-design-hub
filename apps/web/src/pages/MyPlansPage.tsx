@@ -1,50 +1,46 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ChevronDown, FlaskConical } from 'lucide-react';
 import {
   LESSON_DURATION_OPTIONS,
   MOCK_SCENARIOS,
   SUPPORTED_GRADES,
   type SupportedGrade,
-  type LearningOutcomeDto,
   type MockScenario,
 } from '@hub/shared';
 import { ErrorNotice } from '../components/ErrorNotice';
+import { FormSelect } from '../components/FormSelect';
 import { PlanTable } from '../components/PlanTable';
 import { api } from '../lib/api';
 import { useResource } from '../lib/useResource';
 
 const SCENARIO_LABEL: Record<MockScenario, string> = {
   ok: 'Normal response',
-  invalid_then_ok: 'Invalid first, valid on retry',
-  invalid_json: 'Always invalid JSON',
-  schema_violation: 'Breaks the lesson plan schema',
-  uncited: 'Cites no sources',
-  fabricated_citation: 'Invents source ids',
-  timeout: 'Too slow (timeout)',
+  invalid_then_ok: 'Retry after an invalid response',
+  invalid_json: 'Invalid JSON',
+  schema_violation: 'Invalid lesson structure',
+  uncited: 'Missing citations',
+  fabricated_citation: 'Invented citations',
+  timeout: 'Response timeout',
   provider_error: 'Provider outage',
 };
-
-function toScenario(value: string): MockScenario {
-  return MOCK_SCENARIOS.find((scenario) => scenario === value) ?? 'ok';
-}
-
-function groupByStrand(outcomes: LearningOutcomeDto[]): [string, LearningOutcomeDto[]][] {
-  const groups = new Map<string, LearningOutcomeDto[]>();
-  for (const outcome of outcomes)
-    groups.set(outcome.subStrand, [...(groups.get(outcome.subStrand) ?? []), outcome]);
-  return [...groups.entries()];
-}
 
 function gradeLabel(grade: SupportedGrade): string {
   return `Grade ${grade} · Integrated Science`;
 }
 
+function initialGrade(value: string | null): SupportedGrade {
+  const parsed = Number(value);
+  return SUPPORTED_GRADES.includes(parsed as SupportedGrade) ? (parsed as SupportedGrade) : 8;
+}
+
 function NewPlanForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const outcomes = useResource(() => api.outcomes(), 'outcomes');
   const meta = useResource(() => api.meta(), 'meta');
-  const [grade, setGrade] = useState<SupportedGrade>(8);
-  const [outcomeCode, setOutcomeCode] = useState('');
+  const [grade, setGrade] = useState<SupportedGrade>(() => initialGrade(searchParams.get('grade')));
+  const [outcomeCode, setOutcomeCode] = useState(() => searchParams.get('outcome') ?? '');
   const [duration, setDuration] = useState<number>(LESSON_DURATION_OPTIONS[0]);
   const [scenario, setScenario] = useState<MockScenario>('ok');
   const [error, setError] = useState<Error | null>(null);
@@ -59,6 +55,7 @@ function NewPlanForm() {
     [outcomes.data, grade],
   );
   const mockScenarios = meta.data?.mockScenarios ?? [];
+  const isDemoMode = meta.data?.llmProvider === 'mock';
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -69,7 +66,9 @@ function NewPlanForm() {
         grade,
         learningOutcomeCode: outcomeCode,
         durationMinutes: duration,
-        ...(mockScenarios.length > 0 && scenario !== 'ok' ? { simulate: scenario } : {}),
+        ...(isDemoMode && mockScenarios.includes(scenario) && scenario !== 'ok'
+          ? { simulate: scenario }
+          : {}),
       });
       navigate(`/plans/${plan.id}`);
     } catch (caught) {
@@ -86,43 +85,55 @@ function NewPlanForm() {
       aria-labelledby="new-plan-heading"
       aria-busy={busy}
     >
-      <h2 id="new-plan-heading">Draft a new lesson plan</h2>
+      <div className="draft-form-heading">
+        <h2 id="new-plan-heading">Draft a new lesson plan</h2>
+        {meta.data && (
+          <span
+            className={`generation-mode ${isDemoMode ? 'generation-mode-demo' : 'generation-mode-live'}`}
+          >
+            {isDemoMode ? 'Demo mode' : 'Live AI'}
+          </span>
+        )}
+      </div>
       <ErrorNotice error={outcomes.error} onRetry={outcomes.reload} />
+      <ErrorNotice error={meta.error} onRetry={meta.reload} />
       <fieldset className="context-fieldset">
         <legend>Class context</legend>
-        <label>
-          Grade
-          <select
-            value={grade}
-            onChange={(event) => {
-              setGrade(Number(event.target.value) as SupportedGrade);
-              setOutcomeCode('');
-            }}
-          >
-            {SUPPORTED_GRADES.map((option) => (
-              <option key={option} value={option}>
-                {gradeLabel(option)}
-              </option>
-            ))}
-          </select>
-          <span className="field-hint">Retrieval is limited to curriculum evidence for this grade.</span>
-        </label>
+        <FormSelect
+          label="Grade"
+          value={String(grade)}
+          onValueChange={(value) => {
+            setGrade(Number(value) as SupportedGrade);
+            setOutcomeCode('');
+          }}
+          options={SUPPORTED_GRADES.map((option) => ({
+            value: String(option),
+            label: gradeLabel(option),
+          }))}
+          hint="Retrieval is limited to curriculum evidence for this grade."
+          disabled={busy}
+        />
       </fieldset>
-      <label>
-        Learning outcome
-        <select value={outcomeCode} onChange={(e) => setOutcomeCode(e.target.value)} required>
-          <option value="">Choose an outcome…</option>
-          {groupByStrand(gradeOutcomes).map(([subStrand, group]) => (
-            <optgroup key={subStrand} label={subStrand}>
-              {group.map((outcome) => (
-                <option key={outcome.code} value={outcome.code}>
-                  {outcome.code}: {outcome.description}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
+      <FormSelect
+        label="Learning outcome"
+        value={outcomeCode}
+        onValueChange={setOutcomeCode}
+        options={gradeOutcomes.map((outcome) => ({
+          value: outcome.code,
+          label: outcome.code,
+          description: outcome.description,
+          group: outcome.subStrand,
+        }))}
+        placeholder={
+          outcomes.loading
+            ? 'Loading outcomes…'
+            : gradeOutcomes.length
+              ? 'Choose a learning outcome…'
+              : 'No outcomes available'
+        }
+        disabled={busy || outcomes.loading || !gradeOutcomes.length}
+        required
+      />
       {selected && selected.publishedPlanCount > 0 && (
         <p className="banner banner-info" role="status">
           {selected.publishedPlanCount} approved plan{selected.publishedPlanCount === 1 ? '' : 's'}{' '}
@@ -148,17 +159,18 @@ function NewPlanForm() {
           </label>
         ))}
       </fieldset>
-      {mockScenarios.length > 0 && (
-        <label>
-          Mock AI behaviour <span className="muted">(demo mode only)</span>
-          <select value={scenario} onChange={(e) => setScenario(toScenario(e.target.value))}>
-            {mockScenarios.map((option) => (
-              <option key={option} value={option}>
-                {SCENARIO_LABEL[option]}
-              </option>
-            ))}
-          </select>
-        </label>
+      {isDemoMode && scenario !== 'ok' && (
+        <p className="generation-test-warning" role="status">
+          Test active: {SCENARIO_LABEL[scenario]}.{' '}
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setScenario('ok')}
+            disabled={busy}
+          >
+            Use normal response
+          </button>
+        </p>
       )}
       <ErrorNotice error={error} />
       <button type="submit" className="primary" disabled={busy || !outcomeCode}>
@@ -166,15 +178,54 @@ function NewPlanForm() {
       </button>
       {busy && (
         <p className="muted" role="status">
-          Retrieving curriculum sources and drafting. This can take up to a minute with a real AI
-          model.
+          {isDemoMode
+            ? 'Retrieving curriculum sources and preparing the demo draft…'
+            : 'Retrieving curriculum sources and drafting. This can take up to a minute.'}
         </p>
       )}
-      {meta.data && (
-        <p className="muted small">
-          AI: {meta.data.llmProvider} ({meta.data.llmModel}). Only the outcome and curriculum
-          excerpts are sent; no names or emails.
+      {meta.data && !isDemoMode && (
+        <p className="generation-privacy-note">
+          Only curriculum context is sent to the AI provider; no names or emails.
         </p>
+      )}
+      {isDemoMode && mockScenarios.length > 0 && (
+        <details className="generation-tests">
+          <summary>
+            <FlaskConical size={15} aria-hidden="true" />
+            <span>Test generation failures</span>
+            <span
+              className={`generation-test-state${scenario !== 'ok' ? ' generation-test-state-active' : ''}`}
+            >
+              {scenario === 'ok' ? 'Optional' : 'Test active'}
+            </span>
+            <ChevronDown className="generation-tests-chevron" size={14} aria-hidden="true" />
+          </summary>
+          <div className="generation-tests-body">
+            <p>Simulate an AI response to demonstrate validation, retries, or failure handling.</p>
+            <FormSelect
+              label="Response scenario"
+              value={scenario}
+              onValueChange={(value) =>
+                setScenario(MOCK_SCENARIOS.find((option) => option === value) ?? 'ok')
+              }
+              options={mockScenarios.map((option) => ({
+                value: option,
+                label: SCENARIO_LABEL[option],
+              }))}
+              disabled={busy}
+            />
+            <dl className="generation-provider-details">
+              <div>
+                <dt>Provider</dt>
+                <dd>{meta.data?.llmProvider}</dd>
+              </div>
+              <div>
+                <dt>Model</dt>
+                <dd>{meta.data?.llmModel}</dd>
+              </div>
+            </dl>
+          </div>
+        </details>
       )}
     </form>
   );

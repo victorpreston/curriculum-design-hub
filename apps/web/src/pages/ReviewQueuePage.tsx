@@ -1,5 +1,4 @@
-import { ErrorNotice } from '../components/ErrorNotice';
-import { PlanTable } from '../components/PlanTable';
+import { ReviewQueueCard } from '../components/ReviewQueueCard';
 import { api } from '../lib/api';
 import { useResource } from '../lib/useResource';
 
@@ -11,17 +10,13 @@ export function ReviewQueuePage() {
       <p className="muted">
         Submitted plans, oldest first. Open a plan to approve it or return it with comments.
       </p>
-      <ErrorNotice error={queue.error} onRetry={queue.reload} />
-      {queue.loading && !queue.data ? (
-        <p className="muted">Loading…</p>
-      ) : (
-        <PlanTable
-          plans={queue.data?.plans ?? []}
-          caption="Plans waiting for review"
-          emptyMessage="Nothing is waiting for review."
-          showOwner
-        />
-      )}
+      <ReviewQueueCard
+        plans={queue.data?.plans ?? []}
+        loading={queue.loading}
+        error={queue.error}
+        onReload={queue.reload}
+        limit={null}
+      />
     </section>
   );
 }
