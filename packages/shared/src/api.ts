@@ -69,6 +69,17 @@ export interface SessionUser {
   role: Role;
 }
 
+export interface TeacherOverviewDto {
+  id: string;
+  name: string;
+  email: string;
+  totalPlans: number;
+  draftPlans: number;
+  submittedPlans: number;
+  publishedPlans: number;
+  lastActivityAt: string | null;
+}
+
 export interface LearningOutcomeDto {
   code: string;
   description: string;

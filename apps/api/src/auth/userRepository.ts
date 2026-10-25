@@ -1,13 +1,37 @@
-import { eq } from 'drizzle-orm';
-import type { SessionUser } from '@hub/shared';
+import { asc, eq, sql } from 'drizzle-orm';
+import type { SessionUser, TeacherOverviewDto } from '@hub/shared';
 import type { Executor } from '../db/client';
-import { users } from '../db/schema';
+import { lessonPlans, users } from '../db/schema';
 
 const sessionUserColumns = { id: users.id, name: users.name, email: users.email, role: users.role };
 
 export async function findSessionUser(db: Executor, userId: string): Promise<SessionUser | null> {
   const [user] = await db.select(sessionUserColumns).from(users).where(eq(users.id, userId));
   return user ?? null;
+}
+
+export async function listTeacherOverviews(db: Executor): Promise<TeacherOverviewDto[]> {
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      totalPlans: sql<number>`count(${lessonPlans.id})::int`,
+      draftPlans: sql<number>`count(${lessonPlans.id}) filter (where ${lessonPlans.status} in ('draft', 'returned'))::int`,
+      submittedPlans: sql<number>`count(${lessonPlans.id}) filter (where ${lessonPlans.status} = 'submitted')::int`,
+      publishedPlans: sql<number>`count(${lessonPlans.id}) filter (where ${lessonPlans.status} = 'published')::int`,
+      lastActivityAt: sql<Date | null>`max(${lessonPlans.updatedAt})`,
+    })
+    .from(users)
+    .leftJoin(lessonPlans, eq(lessonPlans.ownerId, users.id))
+    .where(eq(users.role, 'teacher'))
+    .groupBy(users.id)
+    .orderBy(asc(users.name));
+
+  return rows.map((row) => ({
+    ...row,
+    lastActivityAt: row.lastActivityAt?.toISOString() ?? null,
+  }));
 }
 
 export async function findUserWithPasswordHash(

@@ -10,6 +10,7 @@ import { PlanPage } from './pages/PlanPage';
 import { ReviewQueuePage } from './pages/ReviewQueuePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
+import { TeamPage } from './pages/TeamPage';
 
 function RequireSignIn({ children }: { children: ReactNode }) {
   const { user, checking } = useAuth();
@@ -58,6 +59,14 @@ export function App() {
               element={
                 <RequireRole role="curriculum_lead">
                   <ReviewQueuePage />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/team"
+              element={
+                <RequireRole role="curriculum_lead">
+                  <TeamPage />
                 </RequireRole>
               }
             />

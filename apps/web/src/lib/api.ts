@@ -9,6 +9,7 @@ import type {
   PlanSummaryDto,
   PlanVersionDetailDto,
   SessionUser,
+  TeacherOverviewDto,
 } from '@hub/shared';
 
 export class ApiError extends Error {
@@ -75,6 +76,7 @@ export const api = {
     request<{ plan: PlanDetailDto }>('/plans/generate', { method: 'POST', body: json(input) }),
   myPlans: () => request<{ plans: PlanSummaryDto[] }>('/plans/mine'),
   reviewQueue: () => request<{ plans: PlanSummaryDto[] }>('/plans/review-queue'),
+  teachers: () => request<{ teachers: TeacherOverviewDto[] }>('/teachers'),
   lessonBank: (outcome?: string) =>
     request<{ plans: PlanSummaryDto[] }>(
       `/plans/bank${outcome ? `?outcome=${encodeURIComponent(outcome)}` : ''}`,

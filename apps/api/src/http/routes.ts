@@ -9,7 +9,7 @@ import {
   type MetaDto,
 } from '@hub/shared';
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, authenticate, signSession } from '../auth/session';
-import { findSessionUser } from '../auth/userRepository';
+import { findSessionUser, listTeacherOverviews } from '../auth/userRepository';
 import { listLearningOutcomes } from '../corpus/outcomeRepository';
 import { UnauthenticatedError } from '../errors';
 import { generateLessonPlan } from '../generation/generationService';
@@ -105,6 +105,10 @@ export function createRouter(deps: AppDeps): Router {
 
   router.get('/plans/review-queue', leadOnly, async (_request, response) => {
     response.json({ plans: await planService.listReviewQueue(db) });
+  });
+
+  router.get('/teachers', leadOnly, async (_request, response) => {
+    response.json({ teachers: await listTeacherOverviews(db) });
   });
 
   router.get('/plans/bank', async (request, response) => {

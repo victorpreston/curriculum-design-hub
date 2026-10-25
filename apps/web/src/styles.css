@@ -605,6 +605,19 @@ a {
   margin-bottom: 0;
 }
 
+.team-table-wrap {
+  overflow: hidden;
+}
+
+.team-table-scroll {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.team-table {
+  min-width: 44rem;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--line);

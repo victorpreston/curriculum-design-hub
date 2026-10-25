@@ -61,6 +61,14 @@ export function Layout() {
               <span>Review queue</span>
             </NavLink>
           )}
+          {user.role === 'curriculum_lead' && (
+            <NavLink to="/team" className="sidebar-link">
+              <span className="nav-icon" aria-hidden="true">
+                ◎
+              </span>
+              <span>Teaching team</span>
+            </NavLink>
+          )}
           <NavLink to="/bank" className="sidebar-link">
             <span className="nav-icon" aria-hidden="true">
               ▤

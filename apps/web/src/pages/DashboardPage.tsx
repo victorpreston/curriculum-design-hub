@@ -201,6 +201,13 @@ function LeadDashboard() {
                   <small>Approve aligned plans or return them with a clear comment.</small>
                 </span>
               </Link>
+              <Link to="/team" className="quick-action">
+                <span className="quick-action-icon">◎</span>
+                <span>
+                  <strong>View the teaching team</strong>
+                  <small>Monitor planning activity without opening private drafts.</small>
+                </span>
+              </Link>
               <Link to="/bank" className="quick-action">
                 <span className="quick-action-icon">▤</span>
                 <span>

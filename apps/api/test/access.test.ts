@@ -27,6 +27,7 @@ describe('authentication', () => {
     ['post', '/api/plans/generate'],
     ['get', '/api/plans/mine'],
     ['get', '/api/plans/review-queue'],
+    ['get', '/api/teachers'],
     ['get', '/api/plans/bank'],
     ['get', '/api/plans/00000000-0000-4000-8000-000000000000'],
     ['put', '/api/plans/00000000-0000-4000-8000-000000000000'],
@@ -165,6 +166,20 @@ describe('role checks on the server', () => {
       (await lead.put(`/api/plans/${plan.id}`).send({ content: plan.content, expectedVersion: 1 }))
         .status,
     ).toBe(403);
+  });
+
+  it('gives curriculum leads a teacher activity summary but not teachers', async () => {
+    const teacher = await context.signIn(TEACHER);
+    const lead = await context.signIn(LEAD);
+
+    expect((await teacher.get('/api/teachers')).status).toBe(403);
+    const response = await lead.get('/api/teachers').expect(200);
+    expect(response.body.teachers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ email: TEACHER, name: 'Amina Odhiambo' }),
+        expect.objectContaining({ email: OTHER_TEACHER, name: 'Kevin Mutua' }),
+      ]),
+    );
   });
 
   it('keeps drafts out of sight of curriculum leads until submitted', async () => {
