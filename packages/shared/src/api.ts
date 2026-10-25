@@ -33,8 +33,7 @@ export const GeneratePlanRequestSchema = z.strictObject({
     .number()
     .int()
     .refine(
-      (value): value is SupportedGrade =>
-        (SUPPORTED_GRADES as readonly number[]).includes(value),
+      (value): value is SupportedGrade => (SUPPORTED_GRADES as readonly number[]).includes(value),
       'Select a supported grade.',
     )
     .default(8),
@@ -55,6 +54,10 @@ export const ReturnPlanRequestSchema = z.strictObject({
     .trim()
     .min(MIN_RETURN_COMMENT_LENGTH, 'Explain what the teacher should change')
     .max(1000),
+});
+
+export const SearchQuerySchema = z.strictObject({
+  q: z.string().trim().min(2).max(80),
 });
 
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
@@ -78,6 +81,16 @@ export interface TeacherOverviewDto {
   submittedPlans: number;
   publishedPlans: number;
   lastActivityAt: string | null;
+}
+
+export interface SearchResultDto {
+  kind: 'plan' | 'outcome';
+  id: string;
+  title: string;
+  description: string;
+  meta: string;
+  grade: SupportedGrade;
+  status?: PlanStatus;
 }
 
 export interface LearningOutcomeDto {

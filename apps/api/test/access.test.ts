@@ -28,6 +28,7 @@ describe('authentication', () => {
     ['get', '/api/plans/mine'],
     ['get', '/api/plans/review-queue'],
     ['get', '/api/teachers'],
+    ['get', '/api/search?q=cell'],
     ['get', '/api/plans/bank'],
     ['get', '/api/plans/00000000-0000-4000-8000-000000000000'],
     ['put', '/api/plans/00000000-0000-4000-8000-000000000000'],
@@ -131,6 +132,43 @@ describe('teacher isolation', () => {
   it('treats a malformed plan id as not found', async () => {
     const teacher = await context.signIn(TEACHER);
     await teacher.get('/api/plans/not-a-uuid').expect(404);
+  });
+});
+
+describe('workspace search', () => {
+  beforeEach(context.resetPlans);
+
+  it("searches outcomes and only the signed-in teacher's plans", async () => {
+    const owner = await context.signIn(TEACHER);
+    const other = await context.signIn(OTHER_TEACHER);
+    const ownPlan = await draftPlan(owner);
+    const otherPlan = await draftPlan(other);
+
+    const response = await owner.get('/api/search?q=IS8.1.2.b').expect(200);
+    const planIds = response.body.results
+      .filter((result: { kind: string }) => result.kind === 'plan')
+      .map((result: { id: string }) => result.id);
+
+    expect(planIds).toContain(ownPlan.id);
+    expect(planIds).not.toContain(otherPlan.id);
+    expect(response.body.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'outcome', id: 'IS8.1.2.b', grade: 8 }),
+      ]),
+    );
+  });
+
+  it('lets a curriculum lead search submitted plans but not drafts', async () => {
+    const teacher = await context.signIn(TEACHER);
+    const lead = await context.signIn(LEAD);
+    const plan = await draftPlan(teacher);
+
+    let response = await lead.get('/api/search?q=IS8.1.2.b').expect(200);
+    expect(response.body.results.map((result: { id: string }) => result.id)).not.toContain(plan.id);
+
+    await teacher.post(`/api/plans/${plan.id}/submit`).expect(200);
+    response = await lead.get('/api/search?q=IS8.1.2.b').expect(200);
+    expect(response.body.results.map((result: { id: string }) => result.id)).toContain(plan.id);
   });
 });
 

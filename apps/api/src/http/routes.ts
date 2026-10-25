@@ -6,6 +6,7 @@ import {
   MOCK_SCENARIOS,
   ReturnPlanRequestSchema,
   SavePlanRequestSchema,
+  SearchQuerySchema,
   type MetaDto,
 } from '@hub/shared';
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, authenticate, signSession } from '../auth/session';
@@ -13,6 +14,7 @@ import { findSessionUser, listTeacherOverviews } from '../auth/userRepository';
 import { listLearningOutcomes } from '../corpus/outcomeRepository';
 import { UnauthenticatedError } from '../errors';
 import { generateLessonPlan } from '../generation/generationService';
+import { searchWorkspace } from '../plans/planRepository';
 import * as planService from '../plans/planService';
 import type { AppDeps } from '../app';
 import { actorOf, parseInput, planIdOf, requireAuth, requireRole } from './middleware';
@@ -74,6 +76,11 @@ export function createRouter(deps: AppDeps): Router {
       mockScenarios: llm.name === 'mock' ? [...MOCK_SCENARIOS] : [],
     };
     response.json(meta);
+  });
+
+  router.get('/search', async (request, response) => {
+    const { q } = parseInput(SearchQuerySchema, request.query);
+    response.json({ results: await searchWorkspace(db, actorOf(request), q) });
   });
 
   router.get('/learning-outcomes', async (_request, response) => {

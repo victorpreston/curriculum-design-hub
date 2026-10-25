@@ -67,10 +67,7 @@ export async function retrieveForOutcome(
   const neighbours = await selectRankedChunks(
     db,
     queryVector,
-    and(
-      gradeFilter,
-      mappedIds.length > 0 ? notInArray(corpusChunks.id, mappedIds) : undefined,
-    ),
+    and(gradeFilter, mappedIds.length > 0 ? notInArray(corpusChunks.id, mappedIds) : undefined),
     topK - mapped.length,
   );
 

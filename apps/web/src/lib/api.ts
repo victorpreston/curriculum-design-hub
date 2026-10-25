@@ -9,6 +9,7 @@ import type {
   PlanSummaryDto,
   PlanVersionDetailDto,
   SessionUser,
+  SearchResultDto,
   TeacherOverviewDto,
 } from '@hub/shared';
 
@@ -71,6 +72,8 @@ export const api = {
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   me: () => request<{ user: SessionUser }>('/auth/me'),
   meta: () => request<MetaDto>('/meta'),
+  search: (query: string) =>
+    request<{ results: SearchResultDto[] }>(`/search?q=${encodeURIComponent(query)}`),
   outcomes: () => request<{ outcomes: LearningOutcomeDto[] }>('/learning-outcomes'),
   generate: (input: GeneratePlanRequest) =>
     request<{ plan: PlanDetailDto }>('/plans/generate', { method: 'POST', body: json(input) }),

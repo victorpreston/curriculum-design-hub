@@ -1,5 +1,5 @@
-import { and, asc, desc, eq, gte, sql, type SQL } from 'drizzle-orm';
-import type { PlanStatus, PlanSummaryDto } from '@hub/shared';
+import { and, asc, desc, eq, gte, ilike, or, sql, type SQL } from 'drizzle-orm';
+import type { PlanStatus, PlanSummaryDto, SearchResultDto } from '@hub/shared';
 import type { Executor } from '../db/client';
 import {
   generations,
@@ -76,6 +76,84 @@ export async function listPlanSummaries(
     .where(where)
     .orderBy(order === 'newest' ? desc(lessonPlans.updatedAt) : asc(lessonPlans.updatedAt));
   return rows.map(toSummary);
+}
+
+export async function searchWorkspace(
+  db: Executor,
+  actor: { id: string; role: 'teacher' | 'curriculum_lead' },
+  query: string,
+): Promise<SearchResultDto[]> {
+  const pattern = `%${query.replaceAll('%', '\\%').replaceAll('_', '\\_')}%`;
+  const planVisibility =
+    actor.role === 'teacher'
+      ? eq(lessonPlans.ownerId, actor.id)
+      : or(
+          eq(lessonPlans.status, 'submitted'),
+          eq(lessonPlans.status, 'returned'),
+          eq(lessonPlans.status, 'published'),
+        );
+  const planRows = await selectSummaries(db)
+    .innerJoin(
+      lessonPlanVersions,
+      and(
+        eq(lessonPlanVersions.planId, lessonPlans.id),
+        eq(lessonPlanVersions.version, lessonPlans.currentVersion),
+      ),
+    )
+    .where(
+      and(
+        planVisibility,
+        or(
+          ilike(lessonPlans.title, pattern),
+          ilike(learningOutcomes.code, pattern),
+          ilike(learningOutcomes.description, pattern),
+          ilike(users.name, pattern),
+          sql`${lessonPlanVersions.content}::text ilike ${pattern}`,
+        ),
+      ),
+    )
+    .orderBy(desc(lessonPlans.updatedAt))
+    .limit(6);
+
+  const outcomeRows = await db
+    .select({
+      code: learningOutcomes.code,
+      description: learningOutcomes.description,
+      grade: learningOutcomes.grade,
+      strand: learningOutcomes.strand,
+      subStrand: learningOutcomes.subStrand,
+    })
+    .from(learningOutcomes)
+    .where(
+      or(
+        ilike(learningOutcomes.code, pattern),
+        ilike(learningOutcomes.description, pattern),
+        ilike(learningOutcomes.strand, pattern),
+        ilike(learningOutcomes.subStrand, pattern),
+      ),
+    )
+    .orderBy(learningOutcomes.grade, learningOutcomes.code)
+    .limit(6);
+
+  return [
+    ...planRows.map((row) => ({
+      kind: 'plan' as const,
+      id: row.id,
+      title: row.title,
+      description: row.outcomeDescription,
+      meta: `Grade ${row.outcomeGrade} · ${row.status}`,
+      grade: row.outcomeGrade as SearchResultDto['grade'],
+      status: row.status,
+    })),
+    ...outcomeRows.map((row) => ({
+      kind: 'outcome' as const,
+      id: row.code,
+      title: row.code,
+      description: row.description,
+      meta: `Grade ${row.grade} · ${row.subStrand}`,
+      grade: row.grade as SearchResultDto['grade'],
+    })),
+  ];
 }
 
 export const planFilters = {

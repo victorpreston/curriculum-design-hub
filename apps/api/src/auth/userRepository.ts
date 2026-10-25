@@ -30,9 +30,7 @@ export async function listTeacherOverviews(db: Executor): Promise<TeacherOvervie
 
   return rows.map((row) => ({
     ...row,
-    lastActivityAt: row.lastActivityAt
-      ? new Date(String(row.lastActivityAt)).toISOString()
-      : null,
+    lastActivityAt: row.lastActivityAt ? new Date(String(row.lastActivityAt)).toISOString() : null,
   }));
 }
 
