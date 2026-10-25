@@ -2,7 +2,7 @@
 
 A teacher selects a Grade 5–8 Integrated Science outcome and lesson duration, drafts from retrieved curriculum excerpts, edits the plan, and submits it for review. A Curriculum Lead approves it into the shared lesson bank or returns it with a comment.
 
-**Loom walkthrough:** Pending recording.
+**Loom walkthrough:** [Watch the demo](https://www.loom.com/share/f58e4af7bc2b4989ab5dd08e15c15e95).
 
 ## Run locally
 
