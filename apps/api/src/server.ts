@@ -9,7 +9,7 @@ const logger = createLogger(config.NODE_ENV === 'production' ? 'info' : 'debug')
 const { db } = createDatabase(config.DATABASE_URL);
 const { llm, embedder } = createProviders(config);
 
-createApp({ db, config, llm, embedder, logger }).listen(config.PORT, () => {
+createApp({ db, config, llm, embedder, logger }).listen(config.PORT, '0.0.0.0', () => {
   logger.info(
     { port: config.PORT, llm: `${llm.name}/${llm.model}`, embeddings: embedder.model },
     'curriculum hub api listening',

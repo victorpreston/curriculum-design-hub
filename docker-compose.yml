@@ -11,10 +11,59 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./apps/api/db-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 3s
       timeout: 3s
       retries: 20
 
+  api:
+    build:
+      context: .
+      target: api
+    init: true
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      POSTGRES_USER: ${POSTGRES_USER:-hub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hub_local_only}
+      POSTGRES_DB: ${POSTGRES_DB:-curriculum_hub}
+      JWT_SECRET: ${JWT_SECRET:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      MOCK_LLM_SCENARIO: ${MOCK_LLM_SCENARIO:-ok}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
+      ANTHROPIC_EFFORT: ${ANTHROPIC_EFFORT:-medium}
+      LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-90000}
+      GENERATIONS_PER_HOUR: ${GENERATIONS_PER_HOUR:-30}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-local}
+    volumes:
+      - model-cache:/app/.cache/models
+      - app-state:/app/.docker-state
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 120
+
+  web:
+    build:
+      context: .
+      target: web
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   db-data:
+  model-cache:
+  app-state:
