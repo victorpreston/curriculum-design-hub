@@ -171,6 +171,7 @@ describe('role checks on the server', () => {
   it('gives curriculum leads a teacher activity summary but not teachers', async () => {
     const teacher = await context.signIn(TEACHER);
     const lead = await context.signIn(LEAD);
+    await draftPlan(teacher);
 
     expect((await teacher.get('/api/teachers')).status).toBe(403);
     const response = await lead.get('/api/teachers').expect(200);
@@ -180,6 +181,10 @@ describe('role checks on the server', () => {
         expect.objectContaining({ email: OTHER_TEACHER, name: 'Kevin Mutua' }),
       ]),
     );
+    expect(
+      response.body.teachers.find((item: { email: string }) => item.email === TEACHER)
+        .lastActivityAt,
+    ).toEqual(expect.any(String));
   });
 
   it('keeps drafts out of sight of curriculum leads until submitted', async () => {
